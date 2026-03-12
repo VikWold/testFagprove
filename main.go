@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"os"
 
+	vcs "testFagprove/internal"
+
 	"github.com/google/uuid"
 )
 
