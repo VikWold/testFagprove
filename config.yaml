@@ -1,0 +1,3 @@
+db:
+  dsn: "postgres://postgres:postgres@db:5432/testfagprove?sslmode=disable"
+  timeout: 5
