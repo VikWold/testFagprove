@@ -12,7 +12,7 @@ import (
 )
 
 type Ehf struct {
-	ID             uuid.UUID  `json:"id"`
+	EhfID          uuid.UUID  `json:"ehf_id"`
 	FileName       string     `json:"file_name"`
 	CustomerID     int        `json:"customer_id"`
 	SupplierID     int        `json:"supplier_id"`
@@ -62,7 +62,7 @@ WHERE id = $1
 
 	logger.InfoContext(ctx, "performing query")
 	err := e.DB.QueryRowContext(ctx, stmt, id).Scan(
-		&ehf.ID,
+		&ehf.EhfID,
 		&ehf.FileName,
 		&ehf.CustomerID,
 		&ehf.SupplierID,
@@ -127,7 +127,7 @@ WHERE id = $1
 		var ehf Ehf
 
 		err := rows.Scan(
-			&ehf.ID,
+			&ehf.EhfID,
 			&ehf.FileName,
 			&ehf.CustomerID,
 			&ehf.SupplierID,
@@ -161,7 +161,7 @@ func (e EhfModel) Insert(ctx context.Context, ehf *Ehf) (*Ehf, error) {
 
 	stmt := `
 INSERT INTO public.ehf (
-	id,
+	ehf_id,
 	file_name,
 	customer_id,
 	supplier_id,
@@ -170,9 +170,10 @@ INSERT INTO public.ehf (
 	issue_date,
 	due_date,
 	currency,
+	amount
 )
-VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, file_name, customer_id, supplier_id, invoice_number, buyer_reference, issue_date, due_date, currency;
+VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING ehf_id, file_name, customer_id, supplier_id, invoice_number, buyer_reference, issue_date, due_date, currency, amount;
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, *e.Timeout)
@@ -192,7 +193,7 @@ RETURNING id, file_name, customer_id, supplier_id, invoice_number, buyer_referen
 	err := e.DB.QueryRowContext(
 		ctx,
 		stmt,
-		ehf.ID,
+		ehf.EhfID,
 		ehf.FileName,
 		ehf.CustomerID,
 		ehf.SupplierID,
@@ -202,7 +203,7 @@ RETURNING id, file_name, customer_id, supplier_id, invoice_number, buyer_referen
 		ehf.DueDate,
 		ehf.Currency,
 	).Scan(
-		&result.ID,
+		&result.EhfID,
 		&result.FileName,
 		&result.CustomerID,
 		&result.SupplierID,

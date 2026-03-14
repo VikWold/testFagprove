@@ -24,6 +24,7 @@ type application struct {
 	config *config.Config
 }
 
+// @version 1.0
 func main() {
 	handler := slog.NewJSONHandler(os.Stdout, nil)
 	logger := slog.New(handler)
@@ -67,6 +68,12 @@ func main() {
 	}
 
 	app.logger.Info("Starting API")
+
+	err = app.serve(":8080")
+	if err != nil {
+		logger.Error("unable to start server", "error", err)
+		os.Exit(1)
+	}
 }
 
 func openDB(dsn string) (*sql.DB, error) {
