@@ -176,3 +176,35 @@ RETURNING id, username, password, created_at, last_updated;
 
 	return &result, nil
 }
+
+func (e *UserModel) Delete(ctx context.Context, userID uuid.UUID) error {
+	logger := loggingutils.LoggerFromContext(ctx)
+	stmt := `
+DELETE FROM public.user
+WHERE id = $1
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, *e.Timeout)
+	defer cancel()
+
+	logger = logger.With(
+		slog.Group(
+			"query",
+			slog.String("statement", stmt),
+			slog.String("id", userID.String()),
+		),
+	)
+
+	_, err := e.DB.ExecContext(ctx, stmt, userID)
+
+	if err != nil {
+		logger.Error(
+			"an error ocurred while trying to delete the user",
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+
+	logger.Info("user deleted successfully")
+	return nil
+}

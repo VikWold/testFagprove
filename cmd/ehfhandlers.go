@@ -167,6 +167,5 @@ func (app *application) deleteEhfHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	logger.InfoContext(ctx, "ehf deleted")
-
-	rest.WriteJSON(w, http.StatusNoContent, nil, nil)
+	w.WriteHeader(http.StatusNoContent)
 }

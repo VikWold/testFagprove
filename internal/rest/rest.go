@@ -119,3 +119,35 @@ func BadRequestResponse(w http.ResponseWriter, r *http.Request, message string) 
 	logger.Info("bad request response", slog.String("message", message))
 	ErrorResponse(w, r, http.StatusBadRequest, message)
 }
+
+func RespondWithJSON(
+	w http.ResponseWriter,
+	r *http.Request,
+	status int,
+	data any,
+	headers http.Header,
+) {
+	logger := loggingutils.LoggerFromContext(r.Context())
+
+	logger.Info("marshalling data")
+	js, err := json.Marshal(data)
+	if err != nil {
+		ServerErrorResponse(w, r, err)
+	}
+
+	js = append(js, '\n')
+
+	logger.Info("adding headers")
+	for key, values := range headers {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+
+	logger.Info("writing response")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if _, err = w.Write(js); err != nil {
+		ServerErrorResponse(w, r, err)
+	}
+}
