@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"testFagprove/internal/auth"
 	"testFagprove/internal/data"
 	"testFagprove/internal/loggingutils"
 	"testFagprove/internal/rest"
@@ -92,12 +93,17 @@ func (app *application) createuserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// HASH PASSWORD BEFORE CREATING
+	hashedPassword, err := auth.HashPassword(req.Password)
+	if err != nil {
+		logger.ErrorContext(ctx, "unable to hash password", "error", err)
+		rest.ServerErrorResponse(w, r, err)
+		return
+	}
 
 	user := &data.User{
 		ID:          req.ID,
 		Username:    req.Username,
-		Password:    req.Password,
+		Password:    hashedPassword,
 		CreatedAt:   req.CreatedAt,
 		LastUpdated: req.LastUpdated,
 	}
@@ -115,10 +121,8 @@ func (app *application) createuserHandler(w http.ResponseWriter, r *http.Request
 		w,
 		http.StatusCreated,
 		UserResponse{
-			ID:          result.ID,
-			Username:    result.Username,
-			CreatedAt:   result.CreatedAt,
-			LastUpdated: result.LastUpdated,
+			ID:       result.ID,
+			Username: result.Username,
 		},
 		nil,
 	)

@@ -145,6 +145,7 @@ RETURNING id, username, password, created_at, last_updated;
 		),
 	)
 
+	us.ID = uuid.New()
 	var result User
 
 	logger.InfoContext(ctx, "performing query")
@@ -154,8 +155,6 @@ RETURNING id, username, password, created_at, last_updated;
 		us.ID,
 		us.Username,
 		us.Password,
-		us.CreatedAt,
-		us.LastUpdated,
 	).Scan(
 		&result.ID,
 		&result.Username,
