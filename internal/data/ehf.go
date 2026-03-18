@@ -16,7 +16,7 @@ type Ehf struct {
 	FileName       string     `json:"file_name"`
 	CustomerID     int        `json:"customer_id"`
 	SupplierID     int        `json:"supplier_id"`
-	InvoiceNo      string     `json:"invoice_number"`
+	InvoiceNo      string     `json:"invoice_no"`
 	BuyerReference string     `json:"buyer_reference"`
 	IssueDate      *time.Time `json:"issue_date"`
 	DueDate        *time.Time `json:"due_date"`
@@ -33,18 +33,18 @@ func (e EhfModel) Get(ctx context.Context, id uuid.UUID) (*Ehf, error) {
 	logger := loggingutils.LoggerFromContext(ctx)
 
 	stmt := `
-SELECT CAST(id AS CHAR(36)),
+SELECT CAST(ehf_id AS CHAR(36)),
 	file_name,
 	customer_id,
 	supplier_id,
-	invoice_number,
+	invoice_no,
 	buyer_reference,
 	issue_date,
 	due_date,
 	currency,
 	amount
 FROM public.ehf
-WHERE id = $1
+WHERE ehf_id = $1
 	`
 
 	var ehf Ehf
@@ -90,18 +90,17 @@ func (e EhfModel) List(ctx context.Context) ([]*Ehf, error) {
 	logger := loggingutils.LoggerFromContext(ctx)
 
 	stmt := `
-SELECT id,
+SELECT ehf_id,
 	file_name,
 	customer_id,
 	supplier_id,
-	invoice_number,
+	invoice_no,
 	buyer_reference,
 	issue_date,
 	due_date,
 	currency,
 	amount
 FROM public.ehf
-WHERE id = $1
 	`
 
 	logger = logger.With(
@@ -165,7 +164,7 @@ INSERT INTO public.ehf (
 	file_name,
 	customer_id,
 	supplier_id,
-	invoice_number,
+	invoice_no,
 	buyer_reference,
 	issue_date,
 	due_date,
@@ -173,7 +172,7 @@ INSERT INTO public.ehf (
 	amount
 )
 VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-RETURNING ehf_id, file_name, customer_id, supplier_id, invoice_number, buyer_reference, issue_date, due_date, currency, amount;
+RETURNING ehf_id, file_name, customer_id, supplier_id, invoice_no, buyer_reference, issue_date, due_date, currency, amount;
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, *e.Timeout)
@@ -188,6 +187,7 @@ RETURNING ehf_id, file_name, customer_id, supplier_id, invoice_number, buyer_ref
 	)
 
 	var result Ehf
+	var ehfID string
 
 	logger.InfoContext(ctx, "performing query")
 	err := e.DB.QueryRowContext(
@@ -202,8 +202,9 @@ RETURNING ehf_id, file_name, customer_id, supplier_id, invoice_number, buyer_ref
 		ehf.IssueDate,
 		ehf.DueDate,
 		ehf.Currency,
+		ehf.Amount,
 	).Scan(
-		&result.EhfID,
+		&ehfID,
 		&result.FileName,
 		&result.CustomerID,
 		&result.SupplierID,
@@ -212,6 +213,7 @@ RETURNING ehf_id, file_name, customer_id, supplier_id, invoice_number, buyer_ref
 		&result.IssueDate,
 		&result.DueDate,
 		&result.Currency,
+		&result.Amount,
 	)
 	if err != nil {
 		switch {
@@ -224,6 +226,11 @@ RETURNING ehf_id, file_name, customer_id, supplier_id, invoice_number, buyer_ref
 		}
 	}
 
+	result.EhfID, err = uuid.Parse(ehfID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &result, nil
 }
 
@@ -231,7 +238,7 @@ func (e *EhfModel) Delete(ctx context.Context, ehfID uuid.UUID) error {
 	logger := loggingutils.LoggerFromContext(ctx)
 	stmt := `
 DELETE FROM public.ehf
-WHERE id = $1
+WHERE ehf_id = $1
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, *e.Timeout)

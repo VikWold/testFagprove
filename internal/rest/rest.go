@@ -151,3 +151,10 @@ func RespondWithJSON(
 		ServerErrorResponse(w, r, err)
 	}
 }
+
+func ValidatorErrorResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
+	data := map[string]any{
+		"errors": errors,
+	}
+	WriteJSON(w, http.StatusUnprocessableEntity, data, nil)
+}

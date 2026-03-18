@@ -23,6 +23,11 @@ type UserListresponse struct {
 	Users []*data.User `json:"users"`
 }
 
+type CreateUserRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func (app *application) listUsersHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -82,13 +87,14 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
-func (app *application) createuserHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := loggingutils.LoggerFromContext(ctx)
 
-	var req data.User
+	var req CreateUserRequest
 	err := rest.ReadJSON(r, &req)
 	if err != nil {
+		logger.ErrorContext(ctx, "unable to decode request", "error", err)
 		rest.BadRequestResponse(w, r, "unable to decode data from request")
 		return
 	}
@@ -101,11 +107,8 @@ func (app *application) createuserHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	user := &data.User{
-		ID:          req.ID,
-		Username:    req.Username,
-		Password:    hashedPassword,
-		CreatedAt:   req.CreatedAt,
-		LastUpdated: req.LastUpdated,
+		Username: req.Username,
+		Password: hashedPassword,
 	}
 
 	result, err := app.models.User.Insert(ctx, user)

@@ -74,7 +74,7 @@ func (u UserModel) List(ctx context.Context) ([]*User, error) {
 	stmt := `
 SELECT id, username, created_at, last_updated
 FROM public.users
-ORDER BY name DESC;
+ORDER BY id DESC;
 	`
 
 	logger = logger.With(
@@ -130,12 +130,15 @@ func (u UserModel) Insert(ctx context.Context, us *User) (*User, error) {
 INSERT INTO public.users (
     id, username, password, created_at, last_updated
 )
-VALUES ($1, $2, $3, $4, $5)
+VALUES ($1, $2, $3, NOW(), NOW())
 RETURNING id, username, password, created_at, last_updated;
     `
 
 	ctx, cancel := context.WithTimeout(ctx, *u.Timeout)
 	defer cancel()
+
+	us.ID = uuid.New()
+	var result User
 
 	logger = logger.With(
 		slog.Group(
@@ -145,10 +148,8 @@ RETURNING id, username, password, created_at, last_updated;
 		),
 	)
 
-	us.ID = uuid.New()
-	var result User
-
 	logger.InfoContext(ctx, "performing query")
+
 	err := u.DB.QueryRowContext(
 		ctx,
 		stmt,
@@ -179,7 +180,7 @@ RETURNING id, username, password, created_at, last_updated;
 func (e *UserModel) Delete(ctx context.Context, userID uuid.UUID) error {
 	logger := loggingutils.LoggerFromContext(ctx)
 	stmt := `
-DELETE FROM public.user
+DELETE FROM public.users
 WHERE id = $1
 	`
 
