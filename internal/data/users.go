@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"strings"
 	"testFagprove/internal/loggingutils"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 type User struct {
 	ID          uuid.UUID  `json:"id"`
 	Username    string     `json:"username"`
-	Password    string     `json:"password"`
+	Password    string     `json:"-"`
 	CreatedAt   *time.Time `json:"created_at"`
 	LastUpdated *time.Time `json:"last_updated"`
 }
@@ -23,6 +24,10 @@ type UserModel struct {
 	Timeout *time.Duration
 	DB      *sql.DB
 }
+
+var (
+	ErrDuplicateUsername = errors.New("duplicate username")
+)
 
 func (u UserModel) Get(ctx context.Context, id uuid.UUID) (*User, error) {
 	logger := loggingutils.LoggerFromContext(ctx)
@@ -164,14 +169,10 @@ RETURNING id, username, password, created_at, last_updated;
 		&result.LastUpdated,
 	)
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			logger.InfoContext(ctx, "no rows found")
-			return nil, ErrRecordNotFound
-		default:
-			logger.InfoContext(ctx, "an error occurred while performing query", "error", err)
-			return nil, err
+		if strings.Contains(err.Error(), "unique_violation") || strings.Contains(err.Error(), "23505") {
+			return nil, ErrDuplicateUsername
 		}
+		return nil, err
 	}
 
 	return &result, nil

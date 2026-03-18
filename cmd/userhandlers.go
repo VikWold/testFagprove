@@ -113,8 +113,13 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 
 	result, err := app.models.User.Insert(ctx, user)
 	if err != nil {
-		logger.ErrorContext(ctx, "unable to insert user", "error", err)
-		rest.ServerErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrDuplicateUsername):
+			rest.BadRequestResponse(w, r, "brukernavnet er allerede i bruk")
+		default:
+			logger.ErrorContext(ctx, "unable to insert user", "error", err)
+			rest.ServerErrorResponse(w, r, err)
+		}
 		return
 	}
 
